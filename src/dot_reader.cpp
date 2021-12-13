@@ -28,6 +28,7 @@ DotReader::~DotReader() {
 
 Code DotReader::getText() {
     uch getchar_ret = EOF;
+    uch prev = 0;
     bool was_last_space = true;
     while (getchar_ret != '.') {
         getchar_ret = getch();
@@ -41,6 +42,9 @@ Code DotReader::getText() {
             was_last_space = true;
             getchar_ret = ' ';
         } else {
+            if ((!islower(getchar_ret) && getchar_ret != 127) && getchar_ret != '.') {
+                continue;
+            }
             was_last_space = false;
         }
         putchar(getchar_ret);
@@ -50,13 +54,23 @@ Code DotReader::getText() {
                 putchar('\b');
                 putchar(' ');
                 putchar('\b');
+                if (!len || text[len - 1] == ' ') {
+                    was_last_space = true;
+                } else {
+                    was_last_space = false;
+                }
             }
-        } else if (false) {
-            ;
+        } else if (getchar_ret == '.' && prev == ' ') {
+            putchar('\b');
+            putchar('\b');
+            putchar('.');
+            putchar(' ');
+            text[len - 1] = getchar_ret;
         } else {
             text[len] = getchar_ret;
             ++len;
         }
+        prev = getchar_ret;
         if (sizeUpdate() != OK) {
             return GET_TEXT_ERROR;
         }
@@ -67,6 +81,29 @@ Code DotReader::getText() {
 }
 
 Code DotReader::modify() {
+    char *s_text = static_cast<char *>(static_cast<void *>(text));
+    s_text[len - 1] = 0;
+    char *last_pos = strrchr(s_text, ' ');
+    if (last_pos) {
+        ++last_pos;
+    } else {
+        last_pos = s_text;
+    }
+    size_t w_len = strlen(last_pos);
+    char *last_found = s_text;
+    while (((last_found = strstr(last_found, last_pos)) != nullptr && last_found != last_pos) && last_found[w_len] == ' ') {
+        memset(last_found, '$', w_len + 1);
+    }
+    char *to = s_text;
+    char *from = s_text;
+    for (; *from; ++from, ++to) {
+        while (*from == '$') {
+            ++from;
+        }
+        *to = *from;
+    }
+    *to = 0;
+    //printf("%p %p\n", last_pos, text);
     // оставить все слова, отличающиеся от последнего слова, перед печатью удалив из слова все последующие вхождения первой буквы
     return OK;
 }
