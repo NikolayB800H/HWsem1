@@ -59,6 +59,8 @@ Code DotReader::getText() {
                 } else {
                     was_last_space = false;
                 }
+            } else {
+                was_last_space = true;
             }
         } else if (getchar_ret == '.' && prev == ' ') {
             putchar('\b');
@@ -80,6 +82,7 @@ Code DotReader::getText() {
     return OK;
 }
 
+// оставить все слова, отличающиеся от последнего слова, перед печатью удалив из слова все последующие вхождения первой буквы
 Code DotReader::modify() {
     char *s_text = static_cast<char *>(static_cast<void *>(text));
     s_text[len - 1] = 0;
@@ -91,9 +94,32 @@ Code DotReader::modify() {
     }
     size_t w_len = strlen(last_pos);
     char *last_found = s_text;
-    while (((last_found = strstr(last_found, last_pos)) != nullptr && last_found != last_pos) && last_found[w_len] == ' ') {
-        memset(last_found, '$', w_len + 1);
+    while (((last_found = strstr(last_found, last_pos)) != nullptr && last_found != last_pos)) {
+        if (last_found[w_len] == ' ' && (last_found == s_text || (last_found[-1] == ' ' || last_found[-1] == '$'))) {
+            memset(last_found, '$', w_len + 1);
+        } else {
+            ++last_found;
+        }
     }
+    last_found = s_text - 1;
+    char first = 0;
+    do {
+        first = last_found[1];
+        if (first != '$') {
+            char *now = last_found + 2;
+            for (; *now && *now != ' '; ++now) {
+                if (*now == first) {
+                    *now = '$';
+                }
+            }
+            last_found = now;
+        } else {
+            do {
+                ++last_found;
+            } while (*last_found == '$');
+            --last_found;
+        }
+    } while (*last_found != 0);
     char *to = s_text;
     char *from = s_text;
     for (; *from; ++from, ++to) {
@@ -102,9 +128,14 @@ Code DotReader::modify() {
         }
         *to = *from;
     }
-    *to = 0;
-    //printf("%p %p\n", last_pos, text);
-    // оставить все слова, отличающиеся от последнего слова, перед печатью удалив из слова все последующие вхождения первой буквы
+    if (to == s_text) {
+        ++to;
+    }
+    if (*(--to)) {
+        ++to;
+    }
+    *to = '.';
+    to[1] = 0;
     return OK;
 }
 
