@@ -28,24 +28,13 @@ DotReader::~DotReader() {
 
 Code DotReader::getText() {
     uch getchar_ret = EOF;
-    uch prev = 0;
-    bool was_last_space = true;
     while (getchar_ret != '.') {
         getchar_ret = getch();
         if (getchar_ret == EOF) {
             return GET_TEXT_ERROR;
         }
-        if (isspace(getchar_ret)) {
-            if (was_last_space) {
-                continue;
-            }
-            was_last_space = true;
-            getchar_ret = ' ';
-        } else {
-            if ((!islower(getchar_ret) && getchar_ret != 127) && getchar_ret != '.') {
-                continue;
-            }
-            was_last_space = false;
+        if (((!isspace(getchar_ret) && !islower(getchar_ret)) && getchar_ret != 127) && getchar_ret != '.') {
+            continue;
         }
         putchar(getchar_ret);
         if (getchar_ret == 127) {
@@ -54,25 +43,11 @@ Code DotReader::getText() {
                 putchar('\b');
                 putchar(' ');
                 putchar('\b');
-                if (!len || text[len - 1] == ' ') {
-                    was_last_space = true;
-                } else {
-                    was_last_space = false;
-                }
-            } else {
-                was_last_space = true;
             }
-        } else if (getchar_ret == '.' && prev == ' ') {
-            putchar('\b');
-            putchar('\b');
-            putchar('.');
-            putchar(' ');
-            text[len - 1] = getchar_ret;
         } else {
             text[len] = getchar_ret;
             ++len;
         }
-        prev = getchar_ret;
         if (sizeUpdate() != OK) {
             return GET_TEXT_ERROR;
         }
@@ -84,8 +59,8 @@ Code DotReader::getText() {
 
 // оставить все слова, отличающиеся от последнего слова, перед печатью удалив из слова все последующие вхождения первой буквы
 Code DotReader::modify() {
+    formatSpaces();
     char *s_text = static_cast<char *>(static_cast<void *>(text));
-    s_text[len - 1] = 0;
     char *last_pos = strrchr(s_text, ' ');
     if (last_pos) {
         ++last_pos;
@@ -158,4 +133,31 @@ Code DotReader::sizeUpdate() {
         text = new_text;
     }
     return OK;
+}
+
+void DotReader::formatSpaces() {
+    bool was_last_space = true;
+    uch *from_spc = text;
+    uch *to_spc = text;
+    for (; from_spc != text + len; ++from_spc) {
+        if (isspace(*from_spc)) {
+            if (was_last_space) {
+                continue;
+            }
+            was_last_space = true;
+            *(to_spc++) = ' ';
+        } else {
+            was_last_space = false;
+            *(to_spc++) = *from_spc;
+        }
+    }
+    to_spc[-1] = '.';
+    len = to_spc - text;
+    if (to_spc > text + 1 && to_spc[-2] == ' ') {
+        to_spc[-2] = '.';
+        --len;
+    }
+    text[len] = 0;
+    --len;
+    printf("%s|%d\n", text, len);
 }

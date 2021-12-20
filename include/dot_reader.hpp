@@ -19,6 +19,8 @@ class DotReader {
 
     Code sizeUpdate();
 
+    void formatSpaces();
+
 public:
     DotReader();
     ~DotReader();
