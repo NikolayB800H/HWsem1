@@ -7,6 +7,10 @@
 
 #include "dot_reader.hpp"
 
+inline static bool isSpace(char a) {
+    return a == ' ';
+}
+
 static uch getch() {
     struct termios old_tio, new_tio;
     uch c;
@@ -33,7 +37,7 @@ Code DotReader::getText() {
         if (getchar_ret == EOF) {
             return GET_TEXT_ERROR;
         }
-        if (((!isspace(getchar_ret) && !islower(getchar_ret)) && getchar_ret != 127) && getchar_ret != '.') {
+        if (((!isSpace(getchar_ret) && !islower(getchar_ret)) && getchar_ret != 127) && getchar_ret != '.') {
             continue;
         }
         putchar(getchar_ret);
@@ -60,6 +64,7 @@ Code DotReader::getText() {
 // оставить все слова, отличающиеся от последнего слова, перед печатью удалив из слова все последующие вхождения первой буквы
 Code DotReader::modify() {
     formatSpaces();
+    text[len - 1] = 0;
     char *s_text = static_cast<char *>(static_cast<void *>(text));
     char *last_pos = strrchr(s_text, ' ');
     if (last_pos) {
@@ -140,7 +145,7 @@ void DotReader::formatSpaces() {
     uch *from_spc = text;
     uch *to_spc = text;
     for (; from_spc != text + len; ++from_spc) {
-        if (isspace(*from_spc)) {
+        if (isSpace(*from_spc)) {
             if (was_last_space) {
                 continue;
             }
@@ -158,6 +163,4 @@ void DotReader::formatSpaces() {
         --len;
     }
     text[len] = 0;
-    --len;
-    printf("%s|%d\n", text, len);
 }
